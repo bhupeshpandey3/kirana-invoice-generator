@@ -24,11 +24,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Get invoice data from request
-    const { invoiceData } = req.body;
+    // Get invoice data from request - handle both old and new formats
+    let data = req.body;
+    
+    // If the data comes wrapped in invoiceData, unwrap it
+    if (data.invoiceData) {
+      data = data.invoiceData;
+    }
 
-    // Validate data
-    if (!invoiceData || !invoiceData.products || invoiceData.products.length === 0) {
+    // Validate data - check for both 'products' and 'items' arrays for compatibility
+    const items = data.products || data.items || [];
+    if (!items || items.length === 0) {
       return res.status(400).json({ error: 'No invoice data provided' });
     }
 
@@ -39,31 +45,31 @@ module.exports = async (req, res) => {
     // Set column widths
     worksheet.columns = [
       { header: 'Item Name', key: 'itemName', width: 20 },
-      { header: 'Item Code', key: 'itemCode', width: 10 },
+      { header: 'Item Code', key: 'itemCode', width: 12 },
       { header: 'Packaging Type', key: 'packagingType', width: 15 },
-      { header: 'Quantity', key: 'quantity', width: 12 },
-      { header: 'Purchase Price', key: 'purchasePrice', width: 12 },
-      { header: 'MRP', key: 'mrp', width: 10 },
+      { header: 'Quantity', key: 'quantity', width: 15 },
+      { header: 'Purchase Price', key: 'purchasePrice', width: 15 },
+      { header: 'MRP', key: 'mrp', width: 12 },
       { header: 'Final Amount', key: 'finalAmount', width: 15 },
       { header: 'Opening Stock', key: 'openingStock', width: 15 }
     ];
 
     // Add invoice header
-    if (invoiceData.vendorName) {
+    if (data.vendorName) {
       worksheet.addRow([]);
-      worksheet.addRow([`Vendor: ${invoiceData.vendorName}`]);
+      worksheet.addRow([`Vendor: ${data.vendorName}`]);
       worksheet.getCell('A2').font = { bold: true, size: 12 };
     }
-    if (invoiceData.invoiceNumber) {
-      worksheet.addRow([`Invoice: ${invoiceData.invoiceNumber}`]);
-    }
-    if (invoiceData.date) {
-      worksheet.addRow([`Date: ${invoiceData.date}`]);
+    if (data.invoiceNumber) {
+      worksheet.addRow([`Invoice: ${data.invoiceNumber}`]);
     }
     worksheet.addRow([]);
 
+    // Get the header row number (depends on whether we added vendor info)
+    const headerRowNumber = data.vendorName ? 5 : 2;
+
     // Add items
-    invoiceData.products.forEach(item => {
+    items.forEach(item => {
       const row = worksheet.addRow({
         itemName: item.itemName || '',
         itemCode: item.itemCode || '',
@@ -83,15 +89,15 @@ module.exports = async (req, res) => {
     });
 
     // Add totals
-    const totalAmount = invoiceData.products.reduce((sum, item) => sum + (parseFloat(item.finalAmount) || 0), 0);
+    const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.finalAmount) || 0), 0);
     worksheet.addRow([]);
-    const totalRow = worksheet.addRow(['', '', '', '', '', 'Total:', totalAmount]);
-    totalRow.getCell('F').font = { bold: true };
+    const totalRow = worksheet.addRow(['', '', '', '', '', '', 'Total:', totalAmount]);
     totalRow.getCell('G').font = { bold: true };
-    totalRow.getCell('G').numFmt = '#,##0.00';
+    totalRow.getCell('H').font = { bold: true };
+    totalRow.getCell('H').numFmt = '#,##0.00';
 
     // Style the header row
-    const headerRow = worksheet.getRow(6);
+    const headerRow = worksheet.getRow(headerRowNumber);
     headerRow.font = { bold: true };
     headerRow.fill = {
       type: 'pattern',

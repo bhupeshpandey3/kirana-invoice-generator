@@ -320,7 +320,7 @@ const KiranaInvoicingApp = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invoiceData: data }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {
