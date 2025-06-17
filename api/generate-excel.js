@@ -42,68 +42,132 @@ module.exports = async (req, res) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Invoice');
 
-    // Set column widths
+    // Set column widths for proper formatting
     worksheet.columns = [
-      { header: 'Item Name', key: 'itemName', width: 20 },
-      { header: 'Item Code', key: 'itemCode', width: 12 },
-      { header: 'Packaging Type', key: 'packagingType', width: 15 },
-      { header: 'Quantity', key: 'quantity', width: 15 },
-      { header: 'Purchase Price', key: 'purchasePrice', width: 15 },
-      { header: 'MRP', key: 'mrp', width: 12 },
-      { header: 'Final Amount', key: 'finalAmount', width: 15 },
-      { header: 'Opening Stock', key: 'openingStock', width: 15 }
+      { width: 15 }, // A
+      { width: 12 }, // B
+      { width: 12 }, // C
+      { width: 10 }, // D
+      { width: 15 }, // E
+      { width: 20 }, // F
+      { width: 15 }, // G
+      { width: 15 }, // H
+      { width: 12 }, // I
+      { width: 15 }  // J
     ];
 
-    // Add invoice header
-    if (data.vendorName) {
-      worksheet.addRow([]);
-      worksheet.addRow([`Vendor: ${data.vendorName}`]);
-      worksheet.getCell('A2').font = { bold: true, size: 12 };
-    }
-    if (data.invoiceNumber) {
-      worksheet.addRow([`Invoice: ${data.invoiceNumber}`]);
-    }
-    worksheet.addRow([]);
+    let currentRow = 1;
 
-    // Get the header row number (depends on whether we added vendor info)
-    const headerRowNumber = data.vendorName ? 5 : 2;
-
-    // Add items
-    items.forEach(item => {
-      const row = worksheet.addRow({
-        itemName: item.itemName || '',
-        itemCode: item.itemCode || '',
-        packagingType: item.packagingType || '',
-        quantity: item.quantity || '',
-        purchasePrice: typeof item.purchasePrice === 'number' ? item.purchasePrice : parseFloat(item.purchasePrice) || 0,
-        mrp: typeof item.mrp === 'number' ? item.mrp : parseFloat(item.mrp) || 0,
-        finalAmount: typeof item.finalAmount === 'number' ? item.finalAmount : parseFloat(item.finalAmount) || 0,
-        openingStock: typeof item.openingStock === 'number' ? item.openingStock : parseFloat(item.openingStock) || 0
-      });
-
-      // Format number columns
-      row.getCell('purchasePrice').numFmt = '#,##0.00';
-      row.getCell('mrp').numFmt = '#,##0.00';
-      row.getCell('finalAmount').numFmt = '#,##0.00';
-      row.getCell('openingStock').numFmt = '#,##0.00';
-    });
-
-    // Add totals
-    const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.finalAmount) || 0), 0);
-    worksheet.addRow([]);
-    const totalRow = worksheet.addRow(['', '', '', '', '', '', 'Total:', totalAmount]);
-    totalRow.getCell('G').font = { bold: true };
-    totalRow.getCell('H').font = { bold: true };
-    totalRow.getCell('H').numFmt = '#,##0.00';
-
-    // Style the header row
-    const headerRow = worksheet.getRow(headerRowNumber);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
+    // Add main title
+    worksheet.mergeCells('A1:J1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'INVOICE';
+    titleCell.font = { bold: true, size: 16 };
+    titleCell.alignment = { horizontal: 'center' };
+    titleCell.fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FFE0E0E0' }
     };
+    currentRow = 2;
+
+    // Add invoice details
+    worksheet.getCell(`A${currentRow}`).value = `Invoice Number: ${data.invoiceNumber || 'N/A'}`;
+    worksheet.getCell(`A${currentRow}`).font = { bold: true };
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = `Date: ${new Date().toLocaleDateString()}`;
+    worksheet.getCell(`A${currentRow}`).font = { bold: true };
+    currentRow++;
+
+    // Add vendor details
+    currentRow++;
+    worksheet.getCell(`A${currentRow}`).value = 'Vendor Details:';
+    worksheet.getCell(`A${currentRow}`).font = { bold: true };
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = `Name: ${data.vendorName || 'N/A'}`;
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = `Address: N/A`;
+    currentRow++;
+
+    // Add customer details
+    worksheet.getCell(`A${currentRow}`).value = 'Customer Details:';
+    worksheet.getCell(`A${currentRow}`).font = { bold: true };
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = `Name: N/A`;
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = `Address: N/A`;
+    currentRow += 2;
+
+    // Add table headers
+    const headers = ['Item Name', 'Item Code', 'Category', 'HSN', 'Packaging Type', 'Quantity', 'Final Amount', 'Purchase Price', 'MRP', 'Opening Stock'];
+    headers.forEach((header, index) => {
+      const cell = worksheet.getCell(currentRow, index + 1);
+      cell.value = header;
+      cell.font = { bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: { style: 'thin' },
+        left: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+    currentRow++;
+
+    // Add items data
+    items.forEach(item => {
+      const rowData = [
+        item.itemName || '',
+        item.itemCode || 'N/A',
+        item.category || '',
+        item.hsn || '',
+        item.packagingType || '',
+        item.quantity || '',
+        typeof item.finalAmount === 'number' ? item.finalAmount : parseFloat(item.finalAmount) || 0,
+        typeof item.purchasePrice === 'number' ? item.purchasePrice : parseFloat(item.purchasePrice) || 0,
+        typeof item.mrp === 'number' ? item.mrp : parseFloat(item.mrp) || 0,
+        typeof item.openingStock === 'number' ? item.openingStock : parseFloat(item.openingStock) || 0
+      ];
+
+      rowData.forEach((value, index) => {
+        const cell = worksheet.getCell(currentRow, index + 1);
+        cell.value = value;
+        
+        // Format number columns
+        if (index >= 6 && index <= 9 && typeof value === 'number') {
+          cell.numFmt = '#,##0.00';
+        }
+        
+        // Add borders
+        cell.border = {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+      currentRow++;
+    });
+
+    // Add empty row
+    currentRow++;
+
+    // Add total
+    const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.finalAmount) || 0), 0);
+    worksheet.getCell(`F${currentRow}`).value = 'Total Amount';
+    worksheet.getCell(`F${currentRow}`).font = { bold: true };
+    worksheet.getCell(`G${currentRow}`).value = totalAmount;
+    worksheet.getCell(`G${currentRow}`).font = { bold: true };
+    worksheet.getCell(`G${currentRow}`).numFmt = '#,##0.00';
 
     // Generate Excel buffer
     const buffer = await workbook.xlsx.writeBuffer();
