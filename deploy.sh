@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Quick Deployment Script for Kirana Invoice Generator
-echo "🚀 Deploying Kirana Invoice Generator..."
+# Vercel Deployment Script for Kirana Invoice Generator
+echo "🚀 Deploying Kirana Invoice Generator to Vercel..."
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
@@ -9,7 +9,7 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
-# Build the project
+# Build the project to test it locally first
 echo "📦 Building the project..."
 npm run build
 
@@ -20,34 +20,37 @@ fi
 
 echo "✅ Build successful!"
 
-# Check if git is initialized
-if [ ! -d ".git" ]; then
-    echo "🔧 Initializing git repository..."
-    git init
-    git add .
-    git commit -m "Initial commit: Kirana Invoice Generator"
-    echo "✅ Git repository initialized"
-else
-    echo "📝 Committing latest changes..."
-    git add .
-    git commit -m "Updated Kirana Invoice Generator - $(date)"
-    echo "✅ Changes committed"
+# Commit the latest changes to Git
+echo "📝 Committing latest changes..."
+git add .
+git commit -m "Updated Kirana Invoice Generator for Vercel deployment - $(date)"
+
+# Push to GitHub
+echo "📤 Pushing to GitHub..."
+git push origin main
+
+# Check if Vercel CLI is installed
+if ! command -v vercel &> /dev/null; then
+    echo "⚠️ Vercel CLI not found. Installing..."
+    npm install -g vercel
 fi
 
+echo "🔍 Checking Vercel login status..."
+vercel whoami &> /dev/null
+if [ $? -ne 0 ]; then
+    echo "🔑 Please login to Vercel:"
+    vercel login
+fi
+
+# Deploy to Vercel
+echo "🚀 Deploying to Vercel..."
+vercel --prod
+
 echo ""
-echo "🎉 Your project is ready for deployment!"
+echo "🎉 Deployment process completed!"
 echo ""
-echo "Next steps:"
-echo "1. Push to GitHub:"
-echo "   git remote add origin https://github.com/YOUR_USERNAME/kirana-invoice-generator.git"
-echo "   git branch -M main"
-echo "   git push -u origin main"
-echo ""
-echo "2. Deploy to Vercel:"
-echo "   - Go to https://vercel.com"
-echo "   - Import your GitHub repository"
-echo "   - Click Deploy"
-echo ""
-echo "3. Your app will be live at: https://your-project-name.vercel.app"
+echo "📋 Next steps:"
+echo "1. Test your live app thoroughly"
+echo "2. Share the URL with your users"
 echo ""
 echo "📖 For detailed instructions, see HOSTING_GUIDE.md"
