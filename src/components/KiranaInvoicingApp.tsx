@@ -4,7 +4,7 @@ import { Plus, Trash2, Save, Download, Globe } from 'lucide-react';
 const KiranaInvoicingApp = () => {
   const [language, setLanguage] = useState<'en' | 'hi'>('en'); // 'en' for English, 'hi' for Hindi
   
-  // Initialize with 5 empty rows (keeping your requirement)
+  // Initialize with 3 empty rows by default
   const createEmptyItem = (id: number) => ({
     id,
     itemName: '',
@@ -25,7 +25,7 @@ const KiranaInvoicingApp = () => {
   });
 
   const [items, setItems] = useState(() => {
-    return Array.from({ length: 5 }, (_, index) => createEmptyItem(index + 1));
+    return Array.from({ length: 3 }, (_, index) => createEmptyItem(index + 1));
   });
 
   const [vendorInfo, setVendorInfo] = useState({
